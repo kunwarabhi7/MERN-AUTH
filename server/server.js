@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { connectToDB } from './utils/db.js';
 import { authRouter } from './routes/user.route.js';
 import { errorHandler, notFound } from './middleware/error.middleware.js';
+import cookieParser from 'cookie-parser';
 
 
 
@@ -10,6 +11,8 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 const PORT = process.env.PORT || 8888;
 
