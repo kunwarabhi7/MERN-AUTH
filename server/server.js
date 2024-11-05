@@ -23,7 +23,7 @@ app.use(errorHandler);
 
 app.get("/", (req, res) =>     res.send("Welcome to the Express.js API!"))
 
-app.listen(PORT, () => {
-    connectToDB();
+app.listen(PORT, async() => {
+  await  connectToDB();
     console.log(`Server is running on port ${PORT}`);
 })

@@ -1,10 +1,10 @@
-import expressAsyncHandler from "express-async-handler";
+import asyncHandler from "express-async-handler";
 import User from "../models/user.model.js";
 import {generateToken} from '../utils/generateToken.js'
 //@desc    Auth user & get token
 // @route   POST /api/users/auth
 // @access  Public
-const loginControllers =expressAsyncHandler( async (req,res)=>{
+const loginControllers =asyncHandler( async (req,res)=>{
 const {email,password} = req.body;
 
 //check if email and password are provided
@@ -17,15 +17,16 @@ if(!email ||!password){
 const user = await User.findOne({email});
 
 
-
+//verify user and password
 if(user && (await user.matchPassword(password))){
-   generateToken(res,user._id),
+  const token = generateToken(res,user._id);
    res.status(200).json({
     _id:user._id,
     name:user.name,
     email:user.email,
-   
+   token
 })
+
 }
 else{
 res.status(401)
@@ -40,7 +41,7 @@ throw new Error('Invalid email or password');
 // @route   POST /api/users
 // @access  Public
 
-const registerControllers = expressAsyncHandler( async (req,res)=>{
+const registerControllers = asyncHandler( async (req,res)=>{
     const {name,email,password} = req.body;
     if(!name ||!email ||!password){
         res.status(400)
@@ -78,7 +79,7 @@ res.status(201).json({
 // @route   POST /api/users/logout
 // @access  Public
 
-const logOutControllers = expressAsyncHandler( async (req,res)=>{
+const logOutControllers = asyncHandler( async (req,res)=>{
     res.clearCookie('jwt',{
         httpOnly: true,
         secure: process.env.NODE_ENV === "production", // Ensures secure in production
@@ -91,16 +92,42 @@ const logOutControllers = expressAsyncHandler( async (req,res)=>{
 // @route   get /api/users
 // @access  Private
 
-const getUserProfile = expressAsyncHandler( async (req,res)=>{
-    res.status(200).json({message: 'Get USer controller'});
+const getUserProfile = asyncHandler( async (req,res)=>{
+ const user = {
+    _id:req.user._id,
+    name:req.user.name,
+    email:req.user.email
+ }
+res.status(200).json(user);
+
 });
 
 // @desc    get user 
 // @route   PUT /api/users/profile
 // @access  Private
 
-const updateUserProfile = expressAsyncHandler( async (req,res)=>{
-    res.status(200).json({message: 'Update USer controller'});
+const updateUserProfile = asyncHandler( async (req,res)=>{
+    //check if user exists
+ console.log(req.user);
+const user = await User.findById(req.user._id);
+if(user){
+    user.name = req.body.name || user.name;
+    user.email = req.body.email || user.email;
+
+    if(req.body.password){
+        user.password=  req.body.password;
+    }
+    const updatedUser = await user.save();
+    res.status(200).json({
+        _id:updatedUser._id,
+        name:updatedUser.name,
+        email:updatedUser.email,
+        message: 'User profile updated successfully'
+    })
+}else{
+    res.status(404)
+    throw new Error('User not found');
+}
 });
 
 
